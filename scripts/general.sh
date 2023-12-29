@@ -1459,7 +1459,7 @@ prepare_host()
 	#
 	# NO_HOST_RELEASE_CHECK overrides the check for a supported host system
 	# Disable host OS check at your own risk. Any issues reported with unsupported releases will be closed without discussion
-	if [[ -z $HOSTRELEASE || "focal jammy" != *"$HOSTRELEASE"* ]]; then
+	if [[ -z $HOSTRELEASE || "hirsute focal jammy" != *"$HOSTRELEASE"* ]]; then
 		if [[ $NO_HOST_RELEASE_CHECK == yes ]]; then
 			display_alert "You are running on an unsupported system" "${HOSTRELEASE:-(unknown)}" "wrn"
 			display_alert "Do not report any errors, warnings or other issues encountered beyond this point" "" "wrn"
@@ -1559,16 +1559,8 @@ prepare_host()
 			# download external Linaro compiler and missing special dependencies since they are needed for certain sources
 
 		local toolchains=(
-			"gcc-linaro-aarch64-none-elf-4.8-2013.11_linux.tar.xz"
-			"gcc-linaro-arm-none-eabi-4.8-2014.04_linux.tar.xz"
-			"gcc-linaro-arm-linux-gnueabihf-4.8-2014.04_linux.tar.xz"
-			"gcc-linaro-4.9.4-2017.01-x86_64_arm-linux-gnueabi.tar.xz"
-			"gcc-linaro-4.9.4-2017.01-x86_64_aarch64-linux-gnu.tar.xz"
-			"gcc-linaro-5.5.0-2017.10-x86_64_arm-linux-gnueabihf.tar.xz"
-			"gcc-linaro-7.4.1-2019.02-x86_64_arm-linux-gnueabi.tar.xz"
+    	"gcc-linaro-7.4.1-2019.02-x86_64_arm-linux-gnueabi.tar.xz"
 			"gcc-linaro-7.4.1-2019.02-x86_64_aarch64-linux-gnu.tar.xz"
-			"gcc-arm-9.2-2019.12-x86_64-arm-none-linux-gnueabihf.tar.xz"
-			"gcc-arm-9.2-2019.12-x86_64-aarch64-none-linux-gnu.tar.xz"
 			"gcc-arm-11.2-2022.02-x86_64-arm-none-linux-gnueabihf.tar.xz"
 			"gcc-arm-11.2-2022.02-x86_64-aarch64-none-linux-gnu.tar.xz"
 			)
@@ -1869,18 +1861,7 @@ show_checklist_variables ()
 
 install_wiringop()
 {
-	install_deb_chroot "$EXTER/cache/debs/arm64/wiringpi_2.51.deb"
-	chroot "${SDCARD}" /bin/bash -c "apt-mark hold wiringpi" >> "${DEST}"/${LOG_SUBPATH}/install.log 2>&1
-
-	if [[ ${IGNORE_UPDATES} != yes ]]; then
-
-		fetch_from_repo "https://github.com/orangepi-xunlong/wiringOP.git" "${EXTER}/cache/sources/wiringOP" "branch:next" "yes"
-		fetch_from_repo "https://github.com/orangepi-xunlong/wiringOP-Python.git" "${EXTER}/cache/sources/wiringOP-Python" "branch:next" "yes"
-
-	fi
-
-	cp ${EXTER}/cache/sources/wiringOP/next ${SDCARD}/usr/src/wiringOP -rfa
-	cp ${EXTER}/cache/sources/wiringOP-Python/next ${SDCARD}/usr/src/wiringOP-Python -rfa
+return	
 }
 
 install_docker() {

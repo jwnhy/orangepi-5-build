@@ -62,7 +62,7 @@ case $REGIONAL_MIRROR in
 	china)
 		[[ -z $USE_MAINLINE_GOOGLE_MIRROR ]] && [[ -z $MAINLINE_MIRROR ]] && MAINLINE_MIRROR=tuna
 		[[ -z $USE_GITHUB_UBOOT_MIRROR ]] && [[ -z $UBOOT_MIRROR ]] && UBOOT_MIRROR=gitee
-		[[ -z $GITHUB_MIRROR ]] && GITHUB_MIRROR=gitclone
+		[[ -z $GITHUB_MIRROR ]] && GITHUB_MIRROR=github
 		[[ -z $DOWNLOAD_MIRROR ]] && DOWNLOAD_MIRROR=china
 		;;
 	*)
@@ -580,6 +580,7 @@ UBUNTU_MIRROR='ports.ubuntu.com/'
 RASPI_MIRROR='archive.raspberrypi.org/debian/'
 
 if [[ $DOWNLOAD_MIRROR == "china" ]] ; then
+
 
 	if [[ ${CHINA_DOWNLOAD_MIRROR} == tsinghua ]]; then
 		DEBIAN_MIRROR='mirrors.tuna.tsinghua.edu.cn/debian'

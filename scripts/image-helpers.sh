@@ -29,7 +29,11 @@
 #
 mount_chroot()
 {
-
+  unset HTTP_PROXY
+  unset HTTPS_PROXY
+  unset http_proxy
+  unset https_proxy
+	
 	local target=$1
 	mount -t proc chproc "${target}"/proc
 	mount -t sysfs chsys "${target}"/sys
@@ -163,7 +167,6 @@ copy_all_packages_files_for()
 
 customize_image()
 {
-
 	# for users that need to prepare files at host
 	[[ -f $USERPATCHES_PATH/customize-image-host.sh ]] && source "$USERPATCHES_PATH"/customize-image-host.sh
 
@@ -198,8 +201,7 @@ POST_CUSTOMIZE_IMAGE
 
 install_deb_chroot()
 {
-
-	local package=$1
+ 	local package=$1
 	local variant=$2
 	local transfer=$3
 	local name
@@ -227,7 +229,6 @@ install_deb_chroot()
 
 dpkg_install_deb_chroot()
 {
-
 	local package=$1
 	local name
 	local desc
@@ -246,7 +247,7 @@ dpkg_install_deb_chroot()
 
 dpkg_install_debs_chroot()
 {
-	local deb_dir=$1
+  local deb_dir=$1
 	local unsatisfied_dependencies=()
 	local package_names=()
 	local package_dependencies=()
@@ -276,8 +277,8 @@ dpkg_install_debs_chroot()
 
 			for element in "${dep_array[@]}"; do
 				if [[ $element == *"|"* ]]; then
+          package_dependencies+=($(echo $element | sed 's/|.*//g'))
 					#dep_array=("${dep_array[@]/$element}")
-					:
 				else
 					if ! find_in_array "$element" "${package_dependencies[@]}"; then
 						package_dependencies+=("${element}")
@@ -300,9 +301,11 @@ dpkg_install_debs_chroot()
 		fi
 	done
 
+	chroot $SDCARD /bin/bash -c "apt-get update; apt-get -y -qq install libxtst6 xdg-utils libpipewire-0.3-0" >> "${DEST}"/${LOG_SUBPATH}/install.log 2>&1
 	if [[ ! -z "${unsatisfied_dependencies[*]}" ]]; then
 		display_alert "Installing Dependencies" "${unsatisfied_dependencies[*]}"
 		chroot $SDCARD /bin/bash -c "apt-get update; apt-get -y -qq install ${unsatisfied_dependencies[*]}" >> "${DEST}"/${LOG_SUBPATH}/install.log 2>&1
+    :
 	fi
 
 	local names=""

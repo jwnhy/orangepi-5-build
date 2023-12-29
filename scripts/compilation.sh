@@ -646,175 +646,19 @@ compile_firmware()
 
 compile_orangepi-zsh()
 {
-
-	local tmp_dir orangepi_zsh_dir
-	tmp_dir=$(mktemp -d)
-	chmod 700 ${tmp_dir}
-	trap "rm -rf \"${tmp_dir}\" ; exit 0" 0 1 2 3 15
-	orangepi_zsh_dir=orangepi-zsh_${REVISION}_all
-	display_alert "Building deb" "orangepi-zsh" "info"
-
-	[[ $IGNORE_UPDATES != yes ]] && fetch_from_repo "https://github.com/robbyrussell/oh-my-zsh" "${EXTER}/cache/sources/oh-my-zsh" "branch:master"
-	[[ $IGNORE_UPDATES != yes ]] && fetch_from_repo "https://github.com/mroth/evalcache" "${EXTER}/cache/sources/evalcache" "branch:master"
-
-	mkdir -p "${tmp_dir}/${orangepi_zsh_dir}"/{DEBIAN,etc/skel/,etc/oh-my-zsh/,/etc/skel/.oh-my-zsh/cache}
-
-	# set up control file
-	cat <<-END > "${tmp_dir}/${orangepi_zsh_dir}"/DEBIAN/control
-	Package: orangepi-zsh
-	Version: $REVISION
-	Architecture: all
-	Maintainer: $MAINTAINER <$MAINTAINERMAIL>
-	Depends: zsh, tmux
-	Section: utils
-	Priority: optional
-	Description: Orange Pi improved ZShell
-	END
-
-	# set up post install script
-	cat <<-END > "${tmp_dir}/${orangepi_zsh_dir}"/DEBIAN/postinst
-	#!/bin/sh
-
-	# copy cache directory if not there yet
-	awk -F'[:]' '{if (\$3 >= 1000 && \$3 != 65534 || \$3 == 0) print ""\$6"/.oh-my-zsh"}' /etc/passwd | xargs -i sh -c 'test ! -d {} && cp -R --attributes-only /etc/skel/.oh-my-zsh {}'
-	awk -F'[:]' '{if (\$3 >= 1000 && \$3 != 65534 || \$3 == 0) print ""\$6"/.zshrc"}' /etc/passwd | xargs -i sh -c 'test ! -f {} && cp -R /etc/skel/.zshrc {}'
-
-	# fix owner permissions in home directory
-	awk -F'[:]' '{if (\$3 >= 1000 && \$3 != 65534 || \$3 == 0) print ""\$1":"\$3" "\$6"/.oh-my-zsh"}' /etc/passwd | xargs -n2 chown -R
-	awk -F'[:]' '{if (\$3 >= 1000 && \$3 != 65534 || \$3 == 0) print ""\$1":"\$3" "\$6"/.zshrc"}' /etc/passwd | xargs -n2 chown -R
-
-	# add support for bash profile
-	! grep emulate /etc/zsh/zprofile  >/dev/null && echo "emulate sh -c 'source /etc/profile'" >> /etc/zsh/zprofile
-	exit 0
-	END
-
-	cp -R "${EXTER}"/cache/sources/oh-my-zsh "${tmp_dir}/${orangepi_zsh_dir}"/etc/
-	cp -R "${EXTER}"/cache/sources/evalcache "${tmp_dir}/${orangepi_zsh_dir}"/etc/oh-my-zsh/plugins
-	cp "${tmp_dir}/${orangepi_zsh_dir}"/etc/oh-my-zsh/templates/zshrc.zsh-template "${tmp_dir}/${orangepi_zsh_dir}"/etc/skel/.zshrc
-
-	chmod -R g-w,o-w "${tmp_dir}/${orangepi_zsh_dir}"/etc/oh-my-zsh/
-
-	# we have common settings
-	sed -i "s/^export ZSH=.*/export ZSH=\/etc\/oh-my-zsh/" "${tmp_dir}/${orangepi_zsh_dir}"/etc/skel/.zshrc
-
-	# user cache
-	sed -i "/^export ZSH=.*/a export ZSH_CACHE_DIR=~\/.oh-my-zsh\/cache" "${tmp_dir}/${orangepi_zsh_dir}"/etc/skel/.zshrc
-
-	# define theme
-	sed -i 's/^ZSH_THEME=.*/ZSH_THEME="mrtazz"/' "${tmp_dir}/${orangepi_zsh_dir}"/etc/skel/.zshrc
-
-	# disable prompt while update
-	sed -i 's/# DISABLE_UPDATE_PROMPT="true"/DISABLE_UPDATE_PROMPT="true"/g' "${tmp_dir}/${orangepi_zsh_dir}"/etc/skel/.zshrc
-
-	# disable auto update since we provide update via package
-	sed -i 's/# DISABLE_AUTO_UPDATE="true"/DISABLE_AUTO_UPDATE="true"/g' "${tmp_dir}/${orangepi_zsh_dir}"/etc/skel/.zshrc
-
-	# define default plugins
-	sed -i 's/^plugins=.*/plugins=(evalcache git git-extras debian tmux screen history extract colorize web-search docker)/' "${tmp_dir}/${orangepi_zsh_dir}"/etc/skel/.zshrc
-
-	chmod 755 "${tmp_dir}/${orangepi_zsh_dir}"/DEBIAN/postinst
-
-	fakeroot dpkg-deb -b -Z${DEB_COMPRESS} "${tmp_dir}/${orangepi_zsh_dir}" >> "${DEST}"/${LOG_SUBPATH}/output.log 2>&1
-	rsync --remove-source-files -rq "${tmp_dir}/${orangepi_zsh_dir}.deb" "${DEB_STORAGE}/"
-	rm -rf "${tmp_dir}"
-
+return
 }
 
 
 
 compile_plymouth-theme-orangepi()
 {
-
-	local tmp_dir work_dir
-	tmp_dir=$(mktemp -d)
-	chmod 700 ${tmp_dir}
-	trap "ret=\$?; rm -rf \"${tmp_dir}\" ; exit \$ret" 0 1 2 3 15
-	plymouth_theme_orangepi_dir=orangepi-plymouth-theme_${REVISION}_all
-	display_alert "Building deb" "orangepi-plymouth-theme" "info"
-
-	mkdir -p "${tmp_dir}/${plymouth_theme_orangepi_dir}"/{DEBIAN,usr/share/plymouth/themes/orangepi}
-
-        # set up control file
-	cat <<- END > "${tmp_dir}/${plymouth_theme_orangepi_dir}"/DEBIAN/control
-		Package: orangepi-plymouth-theme
-		Version: $REVISION
-		Architecture: all
-		Maintainer: $MAINTAINER <$MAINTAINERMAIL>
-		Depends: plymouth, plymouth-themes
-		Section: universe/x11
-		Priority: optional
-		Description: boot animation, logger and I/O multiplexer - orangepi theme
-	END
-
-	cp "${EXTER}"/packages/plymouth-theme-orangepi/debian/{postinst,prerm,postrm} \
-		"${tmp_dir}/${plymouth_theme_orangepi_dir}"/DEBIAN/
-	chmod 755 "${tmp_dir}/${plymouth_theme_orangepi_dir}"/DEBIAN/{postinst,prerm,postrm}
-
-	#convert -resize 256x256 \
-	#	"${EXTER}"/packages/plymouth-theme-orangepi/orangepi-logo.png \
-	#	"${tmp_dir}/${plymouth_theme_orangepi_dir}"/usr/share/plymouth/themes/orangepi/bgrt-fallback.png
-
-	# convert -resize 52x52 \
-	#       "${EXTER}"/packages/plymouth-theme-orangepi/spinner.gif \
-	#       "${tmp_dir}/${plymouth_theme_orangepi_dir}"/usr/share/plymouth/themes/orangepi/animation-%04d.png
-
-	convert -resize 52x52 \
-		"${EXTER}"/packages/plymouth-theme-orangepi/spinner.gif \
-		"${tmp_dir}/${plymouth_theme_orangepi_dir}"/usr/share/plymouth/themes/orangepi/throbber-%04d.png
-
-	cp "${EXTER}"/packages/plymouth-theme-orangepi/watermark.png \
-		"${tmp_dir}/${plymouth_theme_orangepi_dir}"/usr/share/plymouth/themes/orangepi/
-
-	cp "${EXTER}"/packages/plymouth-theme-orangepi/{bullet,capslock,entry,keyboard,keymap-render,lock}.png \
-		"${tmp_dir}/${plymouth_theme_orangepi_dir}"/usr/share/plymouth/themes/orangepi/
-
-	cp "${EXTER}"/packages/plymouth-theme-orangepi/orangepi.plymouth \
-		"${tmp_dir}/${plymouth_theme_orangepi_dir}"/usr/share/plymouth/themes/orangepi/
-
-	fakeroot dpkg-deb -b -Z${DEB_COMPRESS} "${tmp_dir}/${plymouth_theme_orangepi_dir}" > /dev/null
-	rsync --remove-source-files -rq "${tmp_dir}/${plymouth_theme_orangepi_dir}.deb" "${DEB_STORAGE}/"
-	rm -rf "${tmp_dir}"
+  return
 }
 
 compile_orangepi-config()
 {
-	local tmpdir=${SRC}/.tmp/orangepi-config_${REVISION}_all
-
-	display_alert "Building deb" "orangepi-config" "info"
-
-
-	mkdir -p "${tmpdir}"/{DEBIAN,usr/bin/,usr/sbin/,usr/lib/orangepi-config/}
-
-	# set up control file
-	cat <<-END > "${tmpdir}"/DEBIAN/control
-	Package: orangepi-config
-	Version: $REVISION
-	Architecture: all
-	Maintainer: $MAINTAINER <$MAINTAINERMAIL>
-	Replaces: orangepi-bsp
-	Depends: bash, iperf3, psmisc, curl, bc, expect, dialog, pv, \
-	debconf-utils, unzip, build-essential, html2text, apt-transport-https, html2text, dirmngr, software-properties-common
-	Recommends: orangepi-bsp
-	Suggests: libpam-google-authenticator, qrencode, network-manager, sunxi-tools
-	Section: utils
-	Priority: optional
-	Description: Orange Pi configuration utility
-	END
-
-	install -m 755 $EXTER/cache/sources/orangepi-config/scripts/tv_grab_file $tmpdir/usr/bin/tv_grab_file
-	install -m 755 $EXTER/cache/sources/orangepi-config/debian-config $tmpdir/usr/sbin/orangepi-config
-	install -m 644 $EXTER/cache/sources/orangepi-config/debian-config-jobs $tmpdir/usr/lib/orangepi-config/jobs.sh
-	install -m 644 $EXTER/cache/sources/orangepi-config/debian-config-submenu $tmpdir/usr/lib/orangepi-config/submenu.sh
-	install -m 644 $EXTER/cache/sources/orangepi-config/debian-config-functions $tmpdir/usr/lib/orangepi-config/functions.sh
-	install -m 644 $EXTER/cache/sources/orangepi-config/debian-config-functions-network $tmpdir/usr/lib/orangepi-config/functions-network.sh
-	install -m 755 $EXTER/cache/sources/orangepi-config/softy $tmpdir/usr/sbin/softy
-	# fallback to replace orangepi-config in BSP
-	ln -sf /usr/sbin/orangepi-config $tmpdir/usr/bin/orangepi-config
-	ln -sf /usr/sbin/softy "${tmpdir}"/usr/bin/softy
-
-	fakeroot dpkg-deb -b -Z${DEB_COMPRESS} "${tmpdir}" >/dev/null
-	rsync --remove-source-files -rq "${tmpdir}.deb" "${DEB_STORAGE}/"
-	rm -rf "${tmpdir}"
+  return
 }
 
 
