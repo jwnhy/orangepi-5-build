@@ -1,0 +1,1 @@
+docker run --cap-add=SYS_ADMIN --cap-add=MKNOD --cap-add=SYS_PTRACE --security-opt=apparmor:unconfined --device=/dev/loop0 --device=/dev/loop1 --device=/dev/loop2 --device=/dev/pts --device-cgroup-rule='b 7:* rmw' --device-cgroup-rule='b 259:* rmw' --privileged --net=host -v /dev:/tmp/dev:ro -v ~/documents/orangepi-build/:/orangepi-build -t -i orangepi /bin/bash
